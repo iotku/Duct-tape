@@ -9,7 +9,6 @@ set -euf -o pipefail
 # License WTFPL (http://www.wtfpl.net/txt/copying/)
 
 # Global Scope (Declare instead?)
-export LINKPATH="/media/sorted/sorted"
 STARTTIME="$(date --rfc-3339=seconds)"
 export STARTTIME
 export CONFDIR="${HOME}/.config/iotku/"
@@ -47,22 +46,18 @@ function getLastTime () {
 }
 
 function makeLinks () {
-	# Eventually read from config file
-	declare -a SRCDIRS=("/path2" 
-	                    "/path1/"
-	                   )
-
+	LINKPATH="${@: -1}" # Final function argument
 	LASTTIME="$(getLastTime)"
 
-	for SRCDIR in "${SRCDIRS[@]}"
+	for SRCDIR in "${@: 1: $# -1}"
 	do
 		if [ "$LASTTIME" == "none" ];
 		then
-			echo "First Run: Copying All Symlinks"
+			echo "First Run: Copying All Symlinks -> $LINKPATH"
 			# Copy All Symlinks
 			find "$SRCDIR" -maxdepth 1 -not -wholename "$SRCDIR" -exec ln -sv "{}" "$LINKPATH" \;
 		else
-			echo "Creating Symlinks from paths newer than $LASTTIME from $SRCDIR"
+			echo "Creating Symlinks from paths newer than $LASTTIME from $SRCDIR -> $LINKPATH"
 			# Copy Newer Symlinks than last time
 			find "$SRCDIR" -maxdepth 1 -newermt "$LASTTIME" -not -wholename "$SRCDIR" -exec ln -sv "{}" "$LINKPATH" \;
 		fi
@@ -70,7 +65,8 @@ function makeLinks () {
 }
 
 function main () {
-	makeLinks
+	# makeLinks takes "any" amount of paths, and then symlinks them to last path provided
+	makeLinks "/path1/" "/path2/" "/symlink-destination/"
 
 	# Save last Time for later
 	setLastTime
